@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useRef, useEffect } from "react";
 
 function ValentineContent() {
     const searchParams = useSearchParams();
@@ -10,6 +10,7 @@ function ValentineContent() {
     const [isAccepted, setIsAccepted] = useState(false);
     const [noCount, setNoCount] = useState(0);
     const [noBtnPos, setNoBtnPos] = useState({ x: 0, y: 0 });
+    const [isMuted, setIsMuted] = useState(false);
 
 
     const maxGrow = 5;
@@ -18,6 +19,24 @@ function ValentineContent() {
     const yesPaddingX = 40 + growCount * 10;
     const yesPaddingY = 12 + growCount * 4;
     const yesFontSize = 24 + growCount * 2;
+
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Enable audio after first user interaction (browser policy)
+    useEffect(() => {
+        const enableAudio = () => {
+            if (!audioRef.current) return;
+
+            audioRef.current.muted = false;
+            audioRef.current.play().catch(() => {});
+            setIsMuted(false);
+            
+            window.removeEventListener("click", enableAudio);
+        };
+
+        window.addEventListener("click", enableAudio);
+        return () => window.removeEventListener("click", enableAudio);
+    }, []);
 
 
     const noTexts = [
@@ -31,7 +50,7 @@ function ValentineContent() {
 
     const handleNoClick = () => {
         setNoCount(prev => prev + 1);
-        
+
         const maxWidth = window.innerWidth - 150;
         const maxHeight = window.innerHeight - 100; 
 
@@ -60,6 +79,29 @@ function ValentineContent() {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[#ffe4f3] overflow-hidden relative">
+            {/* 🎵 Background Music */}
+            <audio ref={audioRef} loop muted>
+                <source src="/music/from-the-start.mp3" type="audio/mpeg" />
+            </audio>
+
+            {/* 🔇 Mute / Unmute Button */}
+            <button
+                onClick={() => {
+                    if (!audioRef.current) return;
+
+                    const newMuted = !audioRef.current.muted;
+                    audioRef.current.muted = newMuted;
+
+                    if (!newMuted) {
+                        audioRef.current.play().catch(() => {});
+                    }
+
+                    setIsMuted(newMuted);
+                }}
+                className="fixed top-4 right-4 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow text-[#ff4d8d] font-semibold z-50"
+            >
+                {isMuted ? "🔇 Unmute" : "🔊 Mute"}
+            </button>
             {/* Decorative Floating Hearts (Simple CSS animation) */}
             <div className="absolute top-10 left-10 animate-bounce text-4xl">🌸</div>
             <div className="absolute bottom-20 right-10 animate-pulse text-4xl">✨</div>
