@@ -25,17 +25,25 @@ function ValentineContent() {
     // Enable audio after first user interaction (browser policy)
     useEffect(() => {
         const enableAudio = () => {
-            if (!audioRef.current) return;
-
-            audioRef.current.muted = false;
-            audioRef.current.play().catch(() => {});
-            setIsMuted(false);
-            
-            window.removeEventListener("click", enableAudio);
+            if (audioRef.current) {
+                audioRef.current.play()
+                    .then(() => {
+                        setIsMuted(false);
+                        // Remove listener only AFTER successful play
+                        window.removeEventListener("click", enableAudio);
+                        window.removeEventListener("touchstart", enableAudio);
+                    })
+                    .catch((error) => console.log("Autoplay prevented:", error));
+            }
         };
 
         window.addEventListener("click", enableAudio);
-        return () => window.removeEventListener("click", enableAudio);
+        window.addEventListener("touchstart", enableAudio); // Important for mobile!
+
+        return () => {
+            window.removeEventListener("click", enableAudio);
+            window.removeEventListener("touchstart", enableAudio);
+        };
     }, []);
 
 
@@ -45,7 +53,9 @@ function ValentineContent() {
         "Really sure??",
         "Think again! 🥺",
         "Think more deeper",
-        "Okay, if you reject it you can press this 💔"
+        "Okay, you can press this now 💔",
+        "Not working? Press Again!",
+        "Stil? try it again",
     ];
 
     const handleNoClick = () => {
@@ -54,10 +64,14 @@ function ValentineContent() {
         const maxWidth = window.innerWidth - 150;
         const maxHeight = window.innerHeight - 100; 
 
-        if (noCount >= 4) {
+        if (noCount > 5) {
             const randomX = Math.floor(Math.random() * maxWidth)
             const randomY = Math.floor(Math.random() * maxHeight)
             setNoBtnPos({ x: randomX, y: randomY });
+        }
+        
+        if(noCount == 7){
+            setNoCount(5);
         }
     };
 
@@ -80,8 +94,8 @@ function ValentineContent() {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[#ffe4f3] overflow-hidden relative">
             {/* 🎵 Background Music */}
-            <audio ref={audioRef} loop muted>
-                <source src="/music/from-the-start.mp3" type="audio/mpeg" />
+            <audio ref={audioRef} loop preload="auto">
+                <source src="/v-day/music/from-the-start.mp3" type="audio/mpeg" />
             </audio>
 
             {/* 🔇 Mute / Unmute Button */}
@@ -107,7 +121,7 @@ function ValentineContent() {
             <div className="absolute bottom-20 right-10 animate-pulse text-4xl">✨</div>
             <div className="absolute top-1/4 right-5 animate-bounce text-4xl">💖</div>
 
-            <h1 className="text-[#ff4d8d] text-4xl font-bold mb-8 leading-tight">
+            <h1 className="text-[#ff4d8d] text-4xl font-bold mb-8 leading-tight text-center">
             Will you be my valentine, <span className="underline decoration-wavy text-[#ff85b3]">{to}</span>? 💝
             </h1>
             
@@ -137,7 +151,7 @@ function ValentineContent() {
                 
                 {/* NO BUTTON */}
                 <button 
-                    style={noCount >= 5 ? {
+                    style={noCount > 5 ? {
                         position: 'fixed',
                         left: `${noBtnPos.x}px`,
                         top: `${noBtnPos.y}px`,
